@@ -1,0 +1,21 @@
+# Build output: Build_BabyGrip_Album.ps1 makes these again.
+/build/
+/firmware/
+
+# PRIVATE - never publish.
+# Full 16 MB flash backups hold the family photos and the device's Wi-Fi password.
+/backup/
+# Serial and device-check logs print the device's Wi-Fi password at boot.
+*.log
+# Screenshots from the device show the family photos.
+/qa/screens/
+
+# Test recordings, and downloads whose licence was not checked.
+/audio/test/
+/audio/downloads_20261126/Baby_long_wanting_cry.ogg
+/audio/downloads_20261125/Hemlock_stream.ogg
+/audio/downloads_20261125/Rain_against_the_window.ogg
+
+# Python
+__pycache__/
+*.pyc

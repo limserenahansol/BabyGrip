@@ -1,0 +1,11 @@
+# BabyGrip album layout (16 MB flash).
+# ffat keeps the exact offset and size of app3M_fat9M_16MB, so the photo and
+# sound files already on the device stay readable. The unused second OTA slot
+# becomes "media2", a second photo volume.
+# Name,   Type, SubType,  Offset,   Size,     Flags
+nvs,      data, nvs,      0x9000,   0x5000,
+otadata,  data, ota,      0xe000,   0x2000,
+app0,     app,  ota_0,    0x10000,  0x340000,
+media2,   data, fat,      0x350000, 0x2C0000,
+ffat,     data, fat,      0x610000, 0x9E0000,
+coredump, data, coredump, 0xFF0000, 0x10000,

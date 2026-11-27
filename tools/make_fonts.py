@@ -1,0 +1,114 @@
+"""Builds the two large BabyGrip screen fonts as an LVGL 8 C file.
+
+Montserrat (SIL Open Font License) is the TTF that ships with LVGL. The
+built-in LVGL fonts stop at 16 px in this build, too small to read at night on
+a 1.46-inch screen, so this writes:
+  bg_font_big  72 px, only the characters used for clocks and timers
+  bg_font_mid  30 px, printable ASCII
+Output: sketch/BabyGrip_WiFi/BabyGrip_Fonts.c (4 bpp, no kerning).
+"""
+import sys
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT = Path(__file__).resolve().parent.parent
+# The Montserrat TTF that ships with LVGL (kept in libraries/ for this script).
+TTF = ROOT / "libraries" / "lvgl" / "scripts" / "built_in_font" / "Montserrat-Medium.ttf"
+OUT = ROOT / "sketch" / "BabyGrip_WiFi" / "BabyGrip_Fonts.c"
+
+FONTS = [
+    ("bg_font_big", 72, " -0123456789:hm"),
+    ("bg_font_mid", 30, "".join(chr(c) for c in range(0x20, 0x7F))),
+]
+
+
+def render(font, ch):
+    x0, y0, x1, y1 = font.getbbox(ch, anchor="ls")
+    advance = font.getlength(ch)
+    w, h = max(0, x1 - x0), max(0, y1 - y0)
+    if ch == " " or w == 0 or h == 0:
+        return dict(w=0, h=0, ox=0, oy=0, adv=advance, px=[])
+    img = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(img).text((-x0, -y0), ch, font=font, fill=255, anchor="ls")
+    px = [min(15, (v + 8) // 17) for v in img.getdata()]
+    # ofs_y: bottom of the box relative to the baseline, positive upwards.
+    return dict(w=w, h=h, ox=x0, oy=-y1, adv=advance, px=px)
+
+
+def pack(px):
+    out = bytearray()
+    for i in range(0, len(px), 2):
+        hi = px[i]
+        lo = px[i + 1] if i + 1 < len(px) else 0
+        out.append((hi << 4) | lo)
+    return out
+
+
+def font_c(name, size, chars):
+    font = ImageFont.truetype(str(TTF), size)
+    chars = sorted(set(chars), key=ord)
+    glyphs = [render(font, c) for c in chars]
+    bitmap = bytearray()
+    dsc = ["    {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0} /* id = 0 reserved */"]
+    for c, g in zip(chars, glyphs):
+        index = len(bitmap)
+        bitmap += pack(g["px"])
+        adv = int(round(g["adv"] * 16))
+        assert adv < 4096 and g["w"] < 256 and g["h"] < 256 and index < (1 << 20)
+        assert -128 <= g["ox"] < 128 and -128 <= g["oy"] < 128
+        dsc.append(f"    {{.bitmap_index = {index}, .adv_w = {adv}, .box_w = {g['w']}, .box_h = {g['h']}, "
+                   f".ofs_x = {g['ox']}, .ofs_y = {g['oy']}}} /* {c!r} */")
+    tops = [g["oy"] + g["h"] for g in glyphs if g["h"]]
+    bottoms = [g["oy"] for g in glyphs if g["h"]]
+    top, bottom = max(tops), min(bottoms)
+    line_height, base_line = top - bottom, -bottom
+
+    first = ord(chars[0])
+    span = ord(chars[-1]) - first + 1
+    contiguous = span == len(chars)
+    lines = [f"/* {name}: Montserrat Medium {size} px, 4 bpp, {len(chars)} glyphs, {len(bitmap)} bitmap bytes */"]
+    lines.append(f"static LV_ATTRIBUTE_LARGE_CONST const uint8_t {name}_bitmap[] = {{")
+    for i in range(0, len(bitmap), 24):
+        lines.append("    " + ", ".join(f"0x{b:02x}" for b in bitmap[i:i + 24]) + ",")
+    lines.append("};")
+    lines.append(f"static const lv_font_fmt_txt_glyph_dsc_t {name}_dsc[] = {{")
+    lines.append(",\n".join(dsc))
+    lines.append("};")
+    if contiguous:
+        cmap = (f"{{.range_start = {first}, .range_length = {span}, .glyph_id_start = 1, .unicode_list = NULL, "
+                f".glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY}}")
+    else:
+        offsets = ", ".join(f"0x{ord(c) - first:x}" for c in chars)
+        lines.append(f"static const uint16_t {name}_unicode[] = {{{offsets}}};")
+        cmap = (f"{{.range_start = {first}, .range_length = {span}, .glyph_id_start = 1, .unicode_list = {name}_unicode, "
+                f".glyph_id_ofs_list = NULL, .list_length = {len(chars)}, .type = LV_FONT_FMT_TXT_CMAP_SPARSE_TINY}}")
+    lines.append(f"static const lv_font_fmt_txt_cmap_t {name}_cmaps[] = {{{cmap}}};")
+    lines.append(f"static lv_font_fmt_txt_glyph_cache_t {name}_cache;")
+    lines.append(f"static const lv_font_fmt_txt_dsc_t {name}_font_dsc = {{")
+    lines.append(f"    .glyph_bitmap = {name}_bitmap, .glyph_dsc = {name}_dsc, .cmaps = {name}_cmaps,")
+    lines.append("    .kern_dsc = NULL, .kern_scale = 0, .cmap_num = 1, .bpp = 4, .kern_classes = 0, .bitmap_format = 0,")
+    lines.append(f"    .cache = &{name}_cache")
+    lines.append("};")
+    lines.append(f"const lv_font_t {name} = {{")
+    lines.append("    .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt, .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,")
+    lines.append(f"    .line_height = {line_height}, .base_line = {base_line}, .subpx = LV_FONT_SUBPX_NONE,")
+    lines.append(f"    .underline_position = {-max(1, size // 14)}, .underline_thickness = {max(1, size // 20)},")
+    lines.append(f"    .dsc = &{name}_font_dsc")
+    lines.append("};")
+    return "\n".join(lines), len(bitmap)
+
+
+def main():
+    parts = ["/* Generated by tools/make_fonts.py from Montserrat-Medium.ttf (SIL OFL 1.1). Do not edit. */",
+             "#include <lvgl.h>", ""]
+    total = 0
+    for name, size, chars in FONTS:
+        text, size_bytes = font_c(name, size, chars)
+        parts += [text, ""]
+        total += size_bytes
+    OUT.write_text("\n".join(parts), encoding="utf-8")
+    print(f"wrote {OUT} ({total} bitmap bytes)")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

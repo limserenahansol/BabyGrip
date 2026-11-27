@@ -1,0 +1,3 @@
+# Store every file byte for byte (no CRLF/LF conversion), so both PCs get
+# exactly the same files whatever core.autocrlf says.
+* -text
