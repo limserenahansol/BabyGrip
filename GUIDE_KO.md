@@ -203,3 +203,18 @@ USB 명령 `BGMIC 2000`으로 보드의 마이크가 2초 동안 듣는 크기�
 ## 연결이 끊긴 뒤
 
 사진·음원은 BabyGrip 안에 저장되므로, 휴대폰 Wi-Fi를 끊어도 액자·낮잠 기록·소리는 계속 동작합니다. 휴대폰 연결은 사진을 넣거나 휴대폰으로 조작할 때만 필요합니다.
+
+## 2026-11-26 GitHub 저장소 (다른 PC에서 작업하기)
+
+- 저장소: https://github.com/limserenahansol/BabyGrip (공개). 이 폴더 `C:\Users\hsollim\Downloads\BabyGrip_Album_Claude`가 그대로 git 작업 폴더입니다.
+- 다른 PC에서 시작하는 순서는 `C:\Users\hsollim\Downloads\BabyGrip_Album_Claude\README.md`에 있습니다: Git 설치 → `git clone` → `Setup_BabyGrip_PC.ps1`(arduino-cli 1.6.0 + ESP32 core 3.1.1, 한 번만) → `Build_BabyGrip_Album.ps1` → `Flash_BabyGrip_Album.ps1 -Port COMx`(절대 `-FirstInstall` 없이).
+- 스크립트에서 이 PC의 경로를 뺐습니다. 빌드 도구는 `<사용자 폴더>\Downloads\BabyGrip_Setup`(또는 환경 변수 `BABYGRIP_SETUP`)에서 찾습니다. 이 PC에서는 예전과 같은 `C:\Users\hsollim\Downloads\BabyGrip_Setup`입니다. 라이브러리는 저장소의 `libraries\`(Waveshare 판 LVGL 8.3.10, ESP32-audioI2S 2.0.0)를 씁니다.
+- 올리지 않은 것(이 PC에만 있음): `backup\`(사진과 Wi-Fi 비밀번호가 든 전체 백업), `*.log`(켜질 때 비밀번호 출력), `qa\screens\`(사진이 보이는 화면 캡처), `build\`, `firmware\`, `audio\test\`, 라이선스를 확인하지 않은 녹음 3개. lvgl 안의 상용 글꼴 2개(korean.ttf, arial.ttf)는 빌드에 쓰이지 않아 복사본에서 뺐습니다.
+- 빌드 도구 폴더 경로가 80자를 넘으면 Windows 경로 길이 제한(260자) 때문에 빌드가 `No such file or directory`로 멈춥니다. 기본 위치는 40자 안팎이라 괜찮습니다.
+- 확인한 것 (2026-11-26)
+  - 올라간 623개 파일 어디에도 기기 Wi-Fi 비밀번호가 없습니다.
+  - 로그인 없이 새로 받은 사본은 이 폴더의 파일과 623개 모두 바이트 단위로 같습니다.
+  - 빈 폴더에 `Setup_BabyGrip_PC.ps1`을 돌리니 82초 만에 설치됐습니다.
+  - 새로 받은 사본을 새 도구로 빌드하니 3,282,000바이트, 이 PC 도구로 빌드하니 3,282,672바이트가 나왔습니다. 지금 기기에 든 펌웨어는 3,282,320바이트입니다. 코드와 메모리 크기는 셋이 같고, 다른 것은 펌웨어에 적히는 소스 폴더 경로 9개의 길이뿐입니다(+345 / -323자). 두 빌드 모두 저장소의 `libraries\`를 썼습니다.
+  - 소리·글꼴·시험용 울음을 사본에서 다시 만들어도 저장소 파일과 바이트 단위로 같습니다.
+  - 새 PC에서 기기에 실제로 올려 보는 것(Flash)은 기기가 없어 하지 못했습니다.

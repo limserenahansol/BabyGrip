@@ -42,7 +42,7 @@ Waveshare **ESP32-S3-Touch-LCD-1.46B**(1.46인치 원형 터치 화면)를 휴�
    powershell -ExecutionPolicy Bypass -File "$HOME\Downloads\BabyGrip_Album_Claude\Check_BabyGrip.ps1" -Port COM4 -RunTests
    ```
 
-빌드 도구를 다른 곳에 설치하려면 환경 변수 `BABYGRIP_SETUP`을 정하거나, Setup·Build·Flash 스크립트에 `-Setup <폴더>`를 붙이세요.
+빌드 도구를 다른 곳에 설치하려면 환경 변수 `BABYGRIP_SETUP`을 정하거나, Setup·Build·Flash 스크립트에 `-Setup <폴더>`를 붙이세요. 그 폴더 경로는 80자보다 짧아야 합니다. Windows의 경로 길이 제한(260자) 때문에, 길면 빌드가 `No such file or directory`로 멈춥니다(예: `C:\BabyGrip_Setup`은 괜찮음).
 
 ## 두 PC에서 번갈아 작업하기
 

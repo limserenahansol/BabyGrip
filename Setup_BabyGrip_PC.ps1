@@ -11,6 +11,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'  # the progress bar makes downloads very slow in Windows PowerShell 5.1
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+# Windows' 260-character path limit: the compiler opens headers up to ~175
+# characters below this folder, so a folder path much over 80 characters makes
+# the build fail with "No such file or directory". The default is about 40.
+if ($Setup.Length -gt 80) {
+  Write-Warning "This folder path is $($Setup.Length) characters long; builds may fail with 'No such file or directory'. Use a shorter folder, e.g. C:\BabyGrip_Setup."
+}
 $cliVersion = '1.6.0'
 $coreVersion = '3.1.1'
 $indexUrl = 'https://espressif.github.io/arduino-esp32/package_esp32_index.json'

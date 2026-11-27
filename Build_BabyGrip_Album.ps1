@@ -14,6 +14,10 @@ $config = Join-Path $Setup 'arduino-cli.yaml'
 if (-not (Test-Path $cli) -or -not (Test-Path $config)) {
   throw "No toolchain in $Setup. Run Setup_BabyGrip_PC.ps1 first (or pass -Setup <folder>)."
 }
+if ($Setup.Length -gt 80) {
+  # Windows' 260-character path limit (see Setup_BabyGrip_PC.ps1)
+  Write-Warning "Toolchain path is $($Setup.Length) characters; if the build stops with 'No such file or directory', install it in a shorter folder."
+}
 $board = 'esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi,CDCOnBoot=cdc,USBMode=hwcdc,PartitionScheme=app3M_fat9M_16MB'
 & $cli --config-file $config compile --fqbn $board --jobs 8 `
   --build-property 'upload.maximum_size=3407872' `
